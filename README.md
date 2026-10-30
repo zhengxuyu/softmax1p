@@ -1,18 +1,33 @@
 # softmax1p
 
+[![PyPI](https://img.shields.io/pypi/v/softmax1p)](https://pypi.org/project/softmax1p/)
+[![Python](https://img.shields.io/pypi/pyversions/softmax1p)](https://pypi.org/project/softmax1p/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-zhengxuyu.github.io%2Fsoftmax1p-orange)](https://zhengxuyu.github.io/softmax1p/)
+
 This repository is a PyTorch, JAX and TensorFlow implementation of the improvement proposed in:
 
 > Jonathan T. Barron, Dan Gnanapragasam, Michael Tschannen. **[A Fix for Softmax and Cross-Entropy](https://arxiv.org/abs/2610.31642)**. arXiv:2610.31642, 2026.
 
-It provides drop-in `log_softmax`, `softmax` and `cross_entropy` that do not suffer from **Softmax Collapse**. There is one self-contained file per framework, and each depends only on that framework:
+It provides drop-in `log_softmax`, `softmax` and `cross_entropy` that do not suffer from **Softmax Collapse**.
 
-| Framework | File | Built-in it replaces |
-|---|---|---|
-| PyTorch | [`softmax_torch.py`](softmax_torch.py) | `torch.log_softmax`, `F.cross_entropy` |
-| JAX | [`softmax_jax.py`](softmax_jax.py) | `jax.nn.log_softmax`, `optax.softmax_cross_entropy_with_integer_labels` |
-| TensorFlow | [`softmax_tf.py`](softmax_tf.py) | `tf.nn.log_softmax`, `tf.nn.sparse_softmax_cross_entropy_with_logits` |
+```bash
+pip install "softmax1p[torch]"    # or [jax], [tf]; plain `softmax1p` pulls in no framework
+```
 
-📝 Blog post with a full walkthrough of the paper (in Chinese): **[深度理解 "A Fix for Softmax and Cross-Entropy"](https://zhengxuyu.github.io/blog/softmax-cross-entropy-fix)**
+📖 Docs: **<https://zhengxuyu.github.io/softmax1p/>** · 📦 PyPI: **<https://pypi.org/project/softmax1p/>** · 📝 Blog walkthrough (in Chinese): **[深度理解 "A Fix for Softmax and Cross-Entropy"](https://zhengxuyu.github.io/blog/softmax-cross-entropy-fix)**
+
+## Package contents
+
+Every module is a single self-contained file that depends only on its own framework, so you can also just copy the file into your project.
+
+| Module | Framework | Exports | Built-in it replaces |
+|---|---|---|---|
+| [`softmax_torch`](softmax_torch.py) | PyTorch | `log_softmax`, `softmax`, `log_prob_of`, `cross_entropy` | `torch.log_softmax`, `F.cross_entropy` |
+| [`softmax_jax`](softmax_jax.py) | JAX | same four | `jax.nn.log_softmax`, `optax.softmax_cross_entropy_with_integer_labels` |
+| [`softmax_tf`](softmax_tf.py) | TensorFlow | same four | `tf.nn.log_softmax`, `tf.nn.sparse_softmax_cross_entropy_with_logits` |
+| [`vocab_parallel_torch`](vocab_parallel_torch.py) | PyTorch | `vocab_parallel_log_prob_of` | tensor-parallel LM head over a `torch.distributed` group |
+| [`vocab_parallel_jax`](vocab_parallel_jax.py) | JAX | `vocab_parallel_log_prob_of` | tensor-parallel LM head inside `jax.shard_map` |
 
 ## The problem
 
@@ -38,15 +53,6 @@ log p(t)      = −softplus( LSE_{j ≠ t} (z_j − z_t) )
 ```
 
 The kept logit enters the result only through differences. Autodiff therefore gives it exactly minus the sum of the other gradients, so the row gradient sums to zero by construction.
-
-## Install
-
-```bash
-pip install softmax1p             # no framework pulled in
-pip install "softmax1p[torch]"    # or [jax], [tf]
-```
-
-Or copy the single file for your framework into your project; nothing else is needed. Documentation: **<https://zhengxuyu.github.io/softmax1p/>**
 
 ## Usage
 
