@@ -1,5 +1,7 @@
 """log-softmax, softmax and cross-entropy without Softmax Collapse, in PyTorch (depends only on torch).
 
+Author: Ke Xu (https://github.com/kevinkexu)
+
 Reference: J. T. Barron, D. Gnanapragasam and M. Tschannen, "A Fix for Softmax and Cross-Entropy",
 arXiv 2610.31642, Section 2.
 
@@ -22,7 +24,7 @@ argmax (the paper's hard-target cross-entropy, negated), and ``cross_entropy`` i
 Usage:
 
     import torch
-    from safe_softmax import log_softmax, softmax, log_prob_of, cross_entropy
+    from softmax_torch import log_softmax, softmax, log_prob_of, cross_entropy
 
     logits = torch.randn(8, 32000, requires_grad=True)
     target = torch.randint(0, 32000, (8,))
@@ -33,7 +35,7 @@ Usage:
 ``vocab_parallel_log_prob_of`` is the version for logits sharded over the class dimension across a
 ``torch.distributed`` group (tensor-parallel language-model heads).
 
-Run ``python safe_softmax.py`` for a demo of the difference on a large-margin row.
+Run ``python softmax_torch.py`` for a demo of the difference on a large-margin row.
 """
 
 from __future__ import annotations
@@ -201,5 +203,5 @@ if __name__ == "__main__":
         new_lp.backward()
         print(f"{name}: logits {z.tolist()[0]}, target 0")
         print(f"  torch.log_softmax  log p = {std_lp.item():.6g}   grad = {[round(v, 12) for v in std_grad[0].float().tolist()]}")
-        print(f"  safe_softmax       log p = {new_lp.item():.6g}   grad = {[round(v, 12) for v in x.grad[0].float().tolist()]}")
+        print(f"  softmax_torch      log p = {new_lp.item():.6g}   grad = {[round(v, 12) for v in x.grad[0].float().tolist()]}")
     print("float64 reference log p =", torch.log_softmax(z.double(), -1)[0, 0].item())
