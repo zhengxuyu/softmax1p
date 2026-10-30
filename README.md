@@ -58,7 +58,7 @@ lp_all = log_softmax(logits, dim=-1)         # same signature as torch.log_softm
 ```
 
 - `cross_entropy` supports `ignore_index` (default `-100`) and `reduction` (`"none" | "sum" | "mean"`). Unlike `F.cross_entropy`, it expects the class dimension **last**.
-- `vocab_parallel_log_prob_of(logits_shard, target, group)` handles logits sharded over the vocabulary across a `torch.distributed` group, as in tensor-parallel LM heads. It is chunked over rows and recomputes the softmax in backward to bound memory.
+- [`vocab_parallel_torch.py`](vocab_parallel_torch.py) (optional, separate file): `vocab_parallel_log_prob_of(logits_shard, target, group)` handles logits sharded over the vocabulary across a `torch.distributed` group, as in tensor-parallel LM heads. It is chunked over rows and recomputes the softmax in backward to bound memory.
 
 ### JAX
 
@@ -73,7 +73,7 @@ loss = jax.jit(cross_entropy)(logits, target)   # jit / vmap / grad all work
 lp_all = log_softmax(logits, axis=-1)
 ```
 
-- `vocab_parallel_log_prob_of(logits_shard, target, axis_name)` is the tensor-parallel version. Call it inside `jax.shard_map` with the vocabulary split along mesh axis `axis_name`; it communicates with `psum` / `pmax`.
+- [`vocab_parallel_jax.py`](vocab_parallel_jax.py) (optional, separate file): `vocab_parallel_log_prob_of(logits_shard, target, axis_name)` is the tensor-parallel version. Call it inside `jax.shard_map` with the vocabulary split along mesh axis `axis_name`; it communicates with `psum` / `pmax`.
 
 ### TensorFlow
 
@@ -167,24 +167,6 @@ How to read this table:
 - **Bold** cells show where `torch.log_softmax` has collapsed: `log p = 0` and target gradient `0`. The "torch Σ grad" column then equals minus the sum of the other classes' gradients, so the row has a net bias. The fixed version keeps a nonzero target gradient, and its row gradient sums to roughly 0, which is 10³–10¹⁰× closer to zero than torch's.
 - In float32 at margin 40, the float64 reference itself collapses to `0`, because 40 is past fp64's cliff of 36.7. The fixed version in float32 still returns the correct `-2.97e-17`.
 - float16 at margin ≥ 20 is a **range** limit, not collapse: `e^{-20} ≈ 2e-9` is below fp16's smallest subnormal (6e-8), so every term underflows to 0 on both sides. The fix removes the rounding cliff, but it cannot represent numbers fp16 cannot hold. The remaining float16 rows (30 and 40) are omitted above for that reason.
-
-### Demo
-
-Each file runs a small demo: `python softmax_torch.py`, `python softmax_jax.py`, `python softmax_tf.py`. The float32 output is identical in all three:
-
-```
-float32: logits [20.0, 0.0, 0.0, 0.0], target 0
-  torch.log_softmax  log p = 0   grad = [0.0, -2.061e-09, -2.061e-09, -2.061e-09]
-  softmax_torch      log p = -6.18346e-09   grad = [6.183e-09, -2.061e-09, -2.061e-09, -2.061e-09]
-
-  jax.nn.log_softmax log p = 0   grad = [0.0, -2.061e-09, -2.061e-09, -2.061e-09]
-  softmax_jax        log p = -6.18346e-09   grad = [6.183e-09, -2.061e-09, -2.061e-09, -2.061e-09]
-
-  tf.nn.log_softmax  log p = 0   grad = [0.0, -2.061e-09, -2.061e-09, -2.061e-09]
-  softmax_tf         log p = -6.18346e-09   grad = [6.183e-09, -2.061e-09, -2.061e-09, -2.061e-09]
-
-float64 reference log p = -6.1834608353410505e-09
-```
 
 ## Related work
 

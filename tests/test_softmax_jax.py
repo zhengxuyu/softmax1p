@@ -14,7 +14,8 @@ from jax.sharding import AxisType, NamedSharding, PartitionSpec as P
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from softmax_jax import cross_entropy, log_prob_of, log_softmax, softmax, vocab_parallel_log_prob_of
+from softmax_jax import cross_entropy, log_prob_of, log_softmax, softmax
+from vocab_parallel_jax import vocab_parallel_log_prob_of
 
 try:
     from jax import shard_map
