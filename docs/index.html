@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>softmax1p</title>
+<meta name="description" content="Softmax Collapse-free log_softmax, softmax and cross_entropy for PyTorch, JAX and TensorFlow.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fbfaf7; --surface: #ffffff; --ink: #1c1b19; --muted: #6a675f; --line: #e4e0d6;
+  --accent: #b4441b; --accent-soft: #f6e5dc; --good: #2f6b3f; --good-soft: #e1efe3;
+  --code-bg: #f3f1ec;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161513; --surface: #1e1d1a; --ink: #ece9e2; --muted: #a29e94; --line: #34322d;
+    --accent: #f0875a; --accent-soft: #3a2419; --good: #8fd09f; --good-soft: #1d3324;
+    --code-bg: #24221f;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161513; --surface: #1e1d1a; --ink: #ece9e2; --muted: #a29e94; --line: #34322d;
+  --accent: #f0875a; --accent-soft: #3a2419; --good: #8fd09f; --good-soft: #1d3324;
+  --code-bg: #24221f;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.65 "IBM Plex Sans", system-ui, sans-serif;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+header { padding: 64px 0 32px; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 500 13px/1 "IBM Plex Mono", monospace; color: var(--accent); letter-spacing: .04em; }
+h1 { font: 500 clamp(40px, 8vw, 64px)/1.05 "IBM Plex Serif", serif; margin: 14px 0 16px; letter-spacing: -.01em; }
+.lede { font-size: 19px; color: var(--muted); max-width: 640px; margin: 0; }
+.lede em { font-family: "IBM Plex Serif", serif; color: var(--ink); }
+.links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.links a {
+  font: 500 14px/1 "IBM Plex Sans", sans-serif; color: var(--ink); text-decoration: none;
+  border: 1px solid var(--line); background: var(--surface); padding: 10px 14px; border-radius: 6px;
+}
+.links a:hover { border-color: var(--ink); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+nav.toc a { color: var(--muted); text-decoration: none; }
+nav.toc a:hover { color: var(--ink); }
+section { padding: 40px 0 8px; }
+h2 { font: 500 28px/1.2 "IBM Plex Serif", serif; margin: 0 0 16px; }
+h3 { font: 600 16px/1.3 "IBM Plex Sans", sans-serif; margin: 28px 0 8px; }
+p { margin: 0 0 14px; }
+a { color: var(--accent); }
+code, pre { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 14px; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 13.5px; }
+pre {
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 16px; overflow-x: auto; line-height: 1.55; margin: 0 0 16px;
+}
+.c { color: var(--muted); }
+.table-wrap { overflow-x: auto; margin: 0 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-weight: 600; color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .04em; }
+td.num { font-family: "IBM Plex Mono", monospace; text-align: right; white-space: nowrap; }
+.bad { color: var(--accent); font-weight: 600; }
+.ok { color: var(--good); }
+.formula {
+  font: 15px/1.9 "IBM Plex Mono", monospace; background: var(--surface); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 0 0 16px; overflow-x: auto;
+}
+.demo { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin: 8px 0 16px; }
+.demo label { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+.demo input[type=range] { width: 100%; accent-color: var(--accent); margin: 10px 0 14px; }
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.cell { border-radius: 6px; padding: 12px 14px; background: var(--code-bg); }
+.cell .k { font-size: 12.5px; color: var(--muted); }
+.cell .v { font: 500 18px/1.4 "IBM Plex Mono", monospace; word-break: break-all; }
+.cell.bad-bg { background: var(--accent-soft); }
+.cell.ok-bg { background: var(--good-soft); }
+.api { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin: 0 0 14px; }
+.api .sig { font: 500 14px/1.5 "IBM Plex Mono", monospace; padding: 12px 16px; border-bottom: 1px solid var(--line); overflow-x: auto; white-space: nowrap; }
+.api .body { padding: 12px 16px; font-size: 15px; }
+.api .body p:last-child { margin: 0; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.tabs button {
+  font: 500 14px "IBM Plex Sans", sans-serif; background: none; border: 0; color: var(--muted);
+  padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel[hidden] { display: none; }
+footer { margin-top: 48px; padding: 24px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">pip install softmax1p</div>
+    <h1>softmax1p</h1>
+    <p class="lede">Drop-in <code>log_softmax</code>, <code>softmax</code> and <code>cross_entropy</code> for PyTorch, JAX and TensorFlow that do not suffer from <em>Softmax Collapse</em>. An implementation of Barron, Gnanapragasam &amp; Tschannen, <em>A Fix for Softmax and Cross-Entropy</em> (2026).</p>
+    <div class="links">
+      <a href="https://github.com/zhengxuyu/softmax1p">GitHub</a>
+      <a href="https://pypi.org/project/softmax1p/">PyPI</a>
+      <a href="https://arxiv.org/abs/2610.31642">Paper (arXiv:2610.31642)</a>
+      <a href="https://zhengxuyu.github.io/blog/softmax-cross-entropy-fix">Blog walkthrough (中文)</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="toc">
+  <a href="#contents">Package contents</a>
+  <a href="#install">Install</a>
+  <a href="#problem">The problem</a>
+  <a href="#fix">The fix</a>
+  <a href="#api">API</a>
+  <a href="#results">Results</a>
+</nav>
+
+<section id="contents">
+  <h2>Package contents</h2>
+  <p>The package is five independent modules. Each one depends only on its own framework, so you can import it from the installed package or copy the single file into your project.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Module</th><th>Requires</th><th>Exports</th><th>Replaces</th></tr>
+    <tr><td><code>softmax_torch</code></td><td>torch</td><td><code>log_softmax</code> <code>softmax</code> <code>log_prob_of</code> <code>cross_entropy</code></td><td><code>torch.log_softmax</code>, <code>F.cross_entropy</code></td></tr>
+    <tr><td><code>softmax_jax</code></td><td>jax</td><td><code>log_softmax</code> <code>softmax</code> <code>log_prob_of</code> <code>cross_entropy</code></td><td><code>jax.nn.log_softmax</code>, <code>optax.softmax_cross_entropy_with_integer_labels</code></td></tr>
+    <tr><td><code>softmax_tf</code></td><td>tensorflow</td><td><code>log_softmax</code> <code>softmax</code> <code>log_prob_of</code> <code>cross_entropy</code></td><td><code>tf.nn.log_softmax</code>, <code>tf.nn.sparse_softmax_cross_entropy_with_logits</code></td></tr>
+    <tr><td><code>vocab_parallel_torch</code></td><td>torch</td><td><code>vocab_parallel_log_prob_of</code></td><td>Tensor-parallel LM head over a <code>torch.distributed</code> group</td></tr>
+    <tr><td><code>vocab_parallel_jax</code></td><td>jax</td><td><code>vocab_parallel_log_prob_of</code></td><td>Tensor-parallel LM head inside <code>jax.shard_map</code></td></tr>
+  </table></div>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <pre>pip install softmax1p           <span class="c"># no framework pulled in</span>
+pip install "softmax1p[torch]"  <span class="c"># or [jax], [tf]</span></pre>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="t-torch">PyTorch</button>
+    <button role="tab" aria-selected="false" data-tab="t-jax">JAX</button>
+    <button role="tab" aria-selected="false" data-tab="t-tf">TensorFlow</button>
+  </div>
+  <div class="panel" id="t-torch"><pre>import torch
+from softmax_torch import log_softmax, softmax, log_prob_of, cross_entropy
+
+logits = torch.randn(8, 32000, requires_grad=True)
+target = torch.randint(0, 32000, (8,))
+
+loss   = cross_entropy(logits, target)   <span class="c"># class dim LAST: logits [..., C], target [...]</span>
+lp     = log_prob_of(logits, target)     <span class="c"># log p(target) per row</span>
+lp_all = log_softmax(logits, dim=-1)     <span class="c"># same signature as torch.log_softmax</span></pre></div>
+  <div class="panel" id="t-jax" hidden><pre>import jax
+from softmax_jax import log_softmax, softmax, log_prob_of, cross_entropy
+
+logits = jax.random.normal(jax.random.key(0), (8, 32000))
+target = jax.random.randint(jax.random.key(1), (8,), 0, 32000)
+
+loss   = jax.jit(cross_entropy)(logits, target)   <span class="c"># jit / vmap / grad all work</span>
+lp_all = log_softmax(logits, axis=-1)</pre></div>
+  <div class="panel" id="t-tf" hidden><pre>import tensorflow as tf
+from softmax_tf import log_softmax, softmax, log_prob_of, cross_entropy
+
+logits = tf.random.normal((8, 32000))
+target = tf.random.uniform((8,), 0, 32000, dtype=tf.int64)
+
+loss   = cross_entropy(logits, target)   <span class="c"># eager or inside tf.function</span>
+lp_all = log_softmax(logits, axis=-1)</pre></div>
+</section>
+
+<section id="problem">
+  <h2>The problem</h2>
+  <p>The standard log-softmax subtracts the largest logit and computes <code>log(1 + Σ<sub>j≠max</sub> e<sup>−(z<sub>max</sub>−z<sub>j</sub>)</sup>)</code>. When the top logit leads by a margin <code>m</code> where <code>e<sup>−m</sup></code> is below half an ulp of 1, <code>1 + e<sup>−m</sup></code> rounds to exactly <code>1</code>. The target's log-probability and gradient become exactly 0 while the other classes keep nonzero gradients, so the row's gradient no longer sums to zero. With Adam, that bias turns into slingshot loss spikes and parameter drift.</p>
+  <div class="demo">
+    <label for="margin"><span>Margin <code>m</code> in float32, 4 classes <code>[m, 0, 0, 0]</code></span><span id="mval"></span></label>
+    <input id="margin" type="range" min="0" max="30" step="0.5" value="18">
+    <div class="demo-grid">
+      <div class="cell" id="std-cell"><div class="k">standard: log(1 + 3e<sup>−m</sup>)</div><div class="v" id="std"></div></div>
+      <div class="cell ok-bg"><div class="k">softmax1p: −softplus(LSE)</div><div class="v" id="fix"></div></div>
+    </div>
+  </div>
+  <div class="table-wrap"><table>
+    <tr><th>dtype</th><th>collapse margin</th></tr>
+    <tr><td>bfloat16</td><td class="num">≈ 5.5</td></tr>
+    <tr><td>float16</td><td class="num">≈ 7.6</td></tr>
+    <tr><td>float32</td><td class="num">≈ 16.6</td></tr>
+    <tr><td>float64</td><td class="num">≈ 36.7</td></tr>
+  </table></div>
+</section>
+
+<section id="fix">
+  <h2>The fix</h2>
+  <p>Never form <code>1 + e<sup>−m</sup></code>. Set the argmax (or target) slot to an exact 0, take the log-sum-exp over the <em>other</em> slots only, and join the two with softplus:</p>
+  <div class="formula">s<sub>k</sub> = 1[k ≠ argmax] · (z<sub>k</sub> − z<sub>max</sub>)<br>log_softmax<sub>k</sub> = s<sub>k</sub> − softplus( LSE<sub>j≠argmax</sub> s<sub>j</sub> )<br>log p(t) = −softplus( LSE<sub>j≠t</sub> (z<sub>j</sub> − z<sub>t</sub>) )</div>
+  <p>The kept logit enters the result only through differences, so autodiff gives it exactly minus the sum of the other gradients and the row gradient sums to zero by construction.</p>
+</section>
+
+<section id="api">
+  <h2>API</h2>
+  <p>The three <code>softmax_*</code> modules expose the same four functions. PyTorch takes <code>dim</code>, JAX and TensorFlow take <code>axis</code>.</p>
+  <div class="api"><div class="sig">log_softmax(z, dim=-1)</div><div class="body"><p>Log-softmax along <code>dim</code>. Same shapes as the framework's built-in.</p></div></div>
+  <div class="api"><div class="sig">softmax(z, dim=-1)</div><div class="body"><p><code>exp(log_softmax(z, dim))</code>.</p></div></div>
+  <div class="api"><div class="sig">log_prob_of(z, target)</div><div class="body"><p><code>log_softmax(z)[..., target]</code> over the last dimension, for integer <code>target</code> of shape <code>z.shape[:-1]</code>. Cheaper than the full log-softmax and useful for policy gradients.</p></div></div>
+  <div class="api"><div class="sig">cross_entropy(logits, target, ignore_index=-100, reduction="mean")</div><div class="body"><p>Hard-target cross-entropy <code>−log_prob_of(logits, target)</code>. The class dimension is <strong>last</strong>: <code>logits [..., C]</code>, <code>target [...]</code>. This differs from <code>F.cross_entropy</code>. Rows whose target equals <code>ignore_index</code> contribute 0 and are left out of the mean. <code>reduction</code> is <code>"none"</code>, <code>"sum"</code> or <code>"mean"</code>.</p></div></div>
+
+  <h3>Tensor-parallel heads</h3>
+  <div class="api"><div class="sig">vocab_parallel_torch.vocab_parallel_log_prob_of(logits_shard, target, group=None, chunk=1024)</div><div class="body"><p>Use this for logits split over the class dimension across a <code>torch.distributed</code> group, with equal shards in rank order. <code>target</code> holds global class indices. It is chunked over rows and recomputes the softmax in backward to bound memory. With <code>group=None</code> the logits are treated as unsharded.</p></div></div>
+  <div class="api"><div class="sig">vocab_parallel_jax.vocab_parallel_log_prob_of(logits_shard, target, axis_name)</div><div class="body"><p>Call this inside <code>jax.shard_map</code> with the vocabulary split along mesh axis <code>axis_name</code>. It communicates with <code>psum</code> / <code>pmax</code>.</p></div></div>
+</section>
+
+<section id="results">
+  <h2>Results</h2>
+  <p>Row <code>[m, 0, …, 0]</code> (8 classes), target 0, with <code>m</code> past the collapse margin. Σ grad is 0 in exact arithmetic. From <code>benchmarks/collapse_all_frameworks.py</code>.</p>
+  <div class="table-wrap"><table>
+    <tr><th>dtype / m</th><th>implementation</th><th style="text-align:right">log p</th><th style="text-align:right">∂ log p / ∂z<sub>t</sub></th><th style="text-align:right">Σ grad</th></tr>
+    <tr><td>float32 / 20</td><td><em>exact</em></td><td class="num">-1.4428e-08</td><td class="num">1.4428e-08</td><td class="num">0</td></tr>
+    <tr><td>float32 / 20</td><td><code>torch</code> · <code>jax</code> · <code>tf</code> built-in</td><td class="num bad">0</td><td class="num bad">0</td><td class="num">-1.4e-08</td></tr>
+    <tr><td>float32 / 20</td><td>softmax1p (all three)</td><td class="num ok">-1.4428e-08</td><td class="num ok">1.4428e-08</td><td class="num">≤ 6.7e-16</td></tr>
+    <tr><td>bfloat16 / 8</td><td><em>exact</em></td><td class="num">-2.3455e-03</td><td class="num">2.3427e-03</td><td class="num">0</td></tr>
+    <tr><td>bfloat16 / 8</td><td><code>torch</code> · <code>jax</code> · <code>tf</code> built-in</td><td class="num bad">0</td><td class="num bad">0</td><td class="num">-2.3e-03</td></tr>
+    <tr><td>bfloat16 / 8</td><td>softmax1p (all three)</td><td class="num ok">≈ -2.33e-03</td><td class="num ok">≈ 2.34e-03</td><td class="num">≤ 1.9e-06</td></tr>
+  </table></div>
+  <p>Every built-in collapses the same way. The fixed versions recover the exact value to within the dtype's precision and shrink the row-sum error by 7–8 orders of magnitude in fp32 and 3 in bf16. The full margin sweep and test suite are in the <a href="https://github.com/zhengxuyu/softmax1p#test-results">README</a>.</p>
+</section>
+
+<footer>MIT licensed. This is an independent implementation and is not affiliated with the paper's authors.</footer>
+</div>
+
+<script>
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== b.dataset.tab);
+}));
+
+// float32 arithmetic via Math.fround; 4 classes [m, 0, 0, 0], target 0
+const f = Math.fround;
+function standard(m) { return f(Math.log(f(1 + f(3 * f(Math.exp(-m)))))); }
+function fixed(m) {
+  const lse = f(f(Math.log(3)) - m);
+  return -f(Math.max(lse, 0) + Math.log1p(Math.exp(-Math.abs(lse))));
+}
+const slider = document.getElementById("margin");
+function render() {
+  const m = +slider.value, s = standard(m), x = fixed(m);
+  document.getElementById("mval").textContent = "m = " + m.toFixed(1);
+  document.getElementById("std").textContent = "log p = " + (s === 0 ? "0  (collapsed)" : (-s).toExponential(4));
+  document.getElementById("fix").textContent = "log p = " + x.toExponential(4);
+  document.getElementById("std-cell").className = "cell " + (s === 0 ? "bad-bg" : "");
+}
+slider.addEventListener("input", render);
+render();
+</script>
+</body>
+</html>

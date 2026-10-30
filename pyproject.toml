@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "softmax1p"
+version = "0.1.0"
+description = "Softmax Collapse-free log_softmax, softmax and cross_entropy for PyTorch, JAX and TensorFlow"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Zhengxu Yu" }, { name = "Ke Xu" }]
+requires-python = ">=3.9"
+dependencies = []
+keywords = ["softmax", "cross-entropy", "numerical-stability", "pytorch", "jax", "tensorflow"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.optional-dependencies]
+torch = ["torch"]
+jax = ["jax"]
+tf = ["tensorflow"]
+
+[project.urls]
+Documentation = "https://zhengxuyu.github.io/softmax1p/"
+Repository = "https://github.com/zhengxuyu/softmax1p"
+Paper = "https://arxiv.org/abs/2610.31642"
+
+[tool.setuptools]
+py-modules = ["softmax_torch", "softmax_jax", "softmax_tf", "vocab_parallel_torch", "vocab_parallel_jax"]

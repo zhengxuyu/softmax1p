@@ -39,9 +39,18 @@ log p(t)      = −softplus( LSE_{j ≠ t} (z_j − z_t) )
 
 The kept logit enters the result only through differences. Autodiff therefore gives it exactly minus the sum of the other gradients, so the row gradient sums to zero by construction.
 
+## Install
+
+```bash
+pip install softmax1p             # no framework pulled in
+pip install "softmax1p[torch]"    # or [jax], [tf]
+```
+
+Or copy the single file for your framework into your project; nothing else is needed. Documentation: **<https://zhengxuyu.github.io/softmax1p/>**
+
 ## Usage
 
-All three files expose the same functions: `log_softmax`, `softmax`, `log_prob_of` and `cross_entropy`. The class dimension is the **last** one for `log_prob_of` and `cross_entropy`. Copy the file for your framework into your project; nothing else is needed.
+All three files expose the same functions: `log_softmax`, `softmax`, `log_prob_of` and `cross_entropy`. The class dimension is the **last** one for `log_prob_of` and `cross_entropy`.
 
 ### PyTorch
 
