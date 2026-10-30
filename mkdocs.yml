@@ -1,0 +1,79 @@
+site_name: softmax1p
+site_description: Softmax Collapse-free log_softmax, softmax and cross_entropy for PyTorch, JAX and TensorFlow
+site_url: https://zhengxuyu.github.io/softmax1p/
+repo_url: https://github.com/zhengxuyu/softmax1p
+repo_name: zhengxuyu/softmax1p
+edit_uri: edit/main/docs/
+copyright: MIT licensed. Independent implementation, not affiliated with the paper's authors.
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.tabs.link
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: deep orange
+      toggle: { icon: material/weather-night, name: Switch to dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: deep orange
+      toggle: { icon: material/weather-sunny, name: Switch to light mode }
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: installation.md
+      - Quickstart: quickstart.md
+  - Guide:
+      - Softmax Collapse and the fix: guide/background.md
+      - Migrating from built-ins: guide/migration.md
+      - Tensor-parallel heads: guide/vocab-parallel.md
+      - Benchmarks: guide/benchmarks.md
+  - API reference:
+      - softmax_torch: api/softmax_torch.md
+      - softmax_jax: api/softmax_jax.md
+      - softmax_tf: api/softmax_tf.md
+      - vocab_parallel_torch: api/vocab_parallel_torch.md
+      - vocab_parallel_jax: api/vocab_parallel_jax.md
+  - Changelog: changelog.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_root_full_path: false
+            show_source: true
+            show_signature_annotations: true
+            separate_signature: true
+            members_order: source
+            heading_level: 1
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc: { permalink: true }
+  - pymdownx.arithmatex: { generic: true }
+  - pymdownx.details
+  - pymdownx.highlight: { anchor_linenums: true }
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed: { alternate_style: true }
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js

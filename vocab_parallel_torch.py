@@ -93,15 +93,25 @@ class _VocabParallelLogProb(torch.autograd.Function):
         return grad_in, None, None, None
 
 
-def vocab_parallel_log_prob_of(logits_shard: torch.Tensor, target: torch.Tensor, group=None,
+def vocab_parallel_log_prob_of(logits_shard: torch.Tensor, target: torch.Tensor,
+                               group: dist.ProcessGroup | None = None,
                                chunk: int = _DEFAULT_CHUNK) -> torch.Tensor:
     """``log_prob_of`` for logits split over the last (class) dimension across ``group``.
-    ``logits_shard`` is ``[..., C / world]`` and holds classes ``[rank * C / world, (rank + 1) *
-    C / world)`` (equal shards, ranks in order); ``target`` is ``[...]`` with *global* class indices,
-    the same on every rank. Returns the log-probability ``[...]``, identical on every rank, and
-    backpropagates the gradient of this rank's shard. Every rank must call it with the same
-    ``target`` and ``chunk``. ``group=None`` (or an uninitialised ``torch.distributed``) treats the
-    logits as unsharded. ``chunk`` rows are processed at a time to bound temporary memory."""
+
+    Every rank must call it with the same ``target`` and ``chunk``. Backward recomputes the
+    softmax chunk by chunk and returns the gradient of this rank's shard.
+
+    Args:
+        logits_shard: ``[..., C / world]``, holding classes ``[rank * C / world, (rank + 1) * C /
+            world)`` (equal shards, ranks in order).
+        target: ``[...]`` *global* class indices, the same on every rank.
+        group: ``torch.distributed`` process group. ``None`` (or an uninitialised
+            ``torch.distributed``) treats the logits as unsharded.
+        chunk: Rows processed at a time, to bound temporary memory.
+
+    Returns:
+        ``log p(target)`` of shape ``target.shape``, identical on every rank.
+    """
     vp = logits_shard.size(-1)
     out = _VocabParallelLogProb.apply(logits_shard.reshape(-1, vp), target.reshape(-1), group, chunk)
     return out.reshape(target.shape)

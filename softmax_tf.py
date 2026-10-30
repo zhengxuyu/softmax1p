@@ -21,7 +21,16 @@ def _pick(z: tf.Tensor, mask: tf.Tensor) -> tf.Tensor:
     return tf.reduce_sum(tf.where(mask, z, tf.zeros_like(z)), axis=-1, keepdims=True)
 
 
-def log_softmax(z, axis: int = -1) -> tf.Tensor:
+def log_softmax(z: tf.Tensor, axis: int = -1) -> tf.Tensor:
+    """Drop-in replacement for ``tf.nn.log_softmax`` that does not collapse at large margins.
+
+    Args:
+        z: Logits of any shape and floating dtype (anything ``tf.convert_to_tensor`` accepts).
+        axis: Axis to normalise over.
+
+    Returns:
+        Log-probabilities with the shape and dtype of ``z``.
+    """
     z = tf.convert_to_tensor(z)
     axis = axis % z.shape.rank
     z = tf.experimental.numpy.moveaxis(z, axis, -1)
@@ -33,13 +42,30 @@ def log_softmax(z, axis: int = -1) -> tf.Tensor:
     return tf.experimental.numpy.moveaxis(shifted - tf.nn.softplus(lse), -1, axis)
 
 
-def softmax(z, axis: int = -1) -> tf.Tensor:
+def softmax(z: tf.Tensor, axis: int = -1) -> tf.Tensor:
+    """``exp(log_softmax(z, axis))``; drop-in replacement for ``tf.nn.softmax``.
+
+    Args:
+        z: Logits of any shape and floating dtype.
+        axis: Axis to normalise over.
+
+    Returns:
+        Probabilities with the shape and dtype of ``z``.
+    """
     return tf.exp(log_softmax(z, axis))
 
 
-def log_prob_of(z, target) -> tf.Tensor:
-    """log_softmax(z)[..., target] over the last dimension, for integer ``target`` of shape
-    ``z.shape[:-1]``."""
+def log_prob_of(z: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
+    """Log-probability of one class per row, ``log_softmax(z)[..., target]``, without forming the
+    full log-softmax. Useful for policy gradients.
+
+    Args:
+        z: Logits ``[..., C]``; the class axis is last.
+        target: Integer class indices of shape ``z.shape[:-1]``.
+
+    Returns:
+        ``log p(target)`` of shape ``target.shape``.
+    """
     z = tf.convert_to_tensor(z)
     is_t = tf.one_hot(target, tf.shape(z)[-1], on_value=True, off_value=False, dtype=tf.bool)
     z_t = _pick(z, is_t)                                               # target logit
@@ -47,11 +73,24 @@ def log_prob_of(z, target) -> tf.Tensor:
     return -tf.nn.softplus(tf.reduce_logsumexp(others, axis=-1))       # target left out of the sum
 
 
-def cross_entropy(logits, target, ignore_index: int = -100, reduction: str = "mean") -> tf.Tensor:
-    """Hard-target cross-entropy ``-log_prob_of(logits, target)``. ``logits`` is ``[..., C]`` and
-    ``target`` is ``[...]`` (integer class indices). Rows whose target equals ``ignore_index``
-    contribute 0 and are left out of the ``"mean"`` denominator. ``reduction`` is ``"none"`` (shape
-    ``target.shape``), ``"sum"`` or ``"mean"``."""
+def cross_entropy(logits: tf.Tensor, target: tf.Tensor, ignore_index: int = -100,
+                  reduction: str = "mean") -> tf.Tensor:
+    """Hard-target cross-entropy ``-log_prob_of(logits, target)``, like
+    ``tf.nn.sparse_softmax_cross_entropy_with_logits`` plus ``ignore_index`` and ``reduction``.
+
+    Args:
+        logits: Logits ``[..., C]``.
+        target: Integer class indices ``[...]``.
+        ignore_index: Rows with this target contribute 0 and are left out of the ``"mean"``
+            denominator.
+        reduction: ``"none"`` (shape ``target.shape``), ``"sum"`` or ``"mean"``.
+
+    Returns:
+        The loss; ``nan`` for ``"mean"`` if every row is ignored.
+
+    Raises:
+        ValueError: If ``reduction`` is not one of the three values.
+    """
     if reduction not in ("none", "sum", "mean"):
         raise ValueError(f"reduction={reduction!r}: use none, sum or mean")
     logits = tf.convert_to_tensor(logits)

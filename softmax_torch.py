@@ -25,6 +25,15 @@ _NEG_INF = float("-inf")
 
 
 def log_softmax(z: torch.Tensor, dim: int = -1) -> torch.Tensor:
+    """Drop-in replacement for ``torch.log_softmax`` that does not collapse at large margins.
+
+    Args:
+        z: Logits of any shape and floating dtype.
+        dim: Dimension to normalise over.
+
+    Returns:
+        Log-probabilities with the shape and dtype of ``z``.
+    """
     z = z.movedim(dim, -1)
     i_max = z.argmax(dim=-1, keepdim=True)
     z_max = z.gather(-1, i_max)                                        # max logit
@@ -36,12 +45,29 @@ def log_softmax(z: torch.Tensor, dim: int = -1) -> torch.Tensor:
 
 
 def softmax(z: torch.Tensor, dim: int = -1) -> torch.Tensor:
+    """``exp(log_softmax(z, dim))``; drop-in replacement for ``torch.softmax``.
+
+    Args:
+        z: Logits of any shape and floating dtype.
+        dim: Dimension to normalise over.
+
+    Returns:
+        Probabilities with the shape and dtype of ``z``.
+    """
     return log_softmax(z, dim).exp()
 
 
 def log_prob_of(z: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    """log_softmax(z)[..., target] over the last dimension, for integer ``target`` of shape
-    ``z.shape[:-1]``."""
+    """Log-probability of one class per row, ``log_softmax(z)[..., target]``, without forming the
+    full log-softmax. Useful for policy gradients.
+
+    Args:
+        z: Logits ``[..., C]``; the class dimension is last.
+        target: Integer class indices of shape ``z.shape[:-1]``.
+
+    Returns:
+        ``log p(target)`` of shape ``target.shape``.
+    """
     t = target.unsqueeze(-1)
     z_t = z.gather(-1, t)                                              # target logit
     is_t = torch.zeros_like(z, dtype=torch.bool).scatter_(-1, t, True)
@@ -51,11 +77,23 @@ def log_prob_of(z: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
 def cross_entropy(logits: torch.Tensor, target: torch.Tensor, ignore_index: int = -100,
                   reduction: str = "mean") -> torch.Tensor:
-    """Hard-target cross-entropy ``-log_prob_of(logits, target)``. Unlike
-    ``torch.nn.functional.cross_entropy`` the class dimension is the last one: ``logits`` is
-    ``[..., C]`` and ``target`` is ``[...]`` (integer class indices). Rows whose target equals
-    ``ignore_index`` contribute 0 and are left out of the ``"mean"`` denominator. ``reduction`` is
-    ``"none"`` (shape ``target.shape``), ``"sum"`` or ``"mean"``."""
+    """Hard-target cross-entropy ``-log_prob_of(logits, target)``.
+
+    Unlike ``torch.nn.functional.cross_entropy``, the class dimension is the **last** one.
+
+    Args:
+        logits: Logits ``[..., C]``.
+        target: Integer class indices ``[...]``.
+        ignore_index: Rows with this target contribute 0 and are left out of the ``"mean"``
+            denominator.
+        reduction: ``"none"`` (shape ``target.shape``), ``"sum"`` or ``"mean"``.
+
+    Returns:
+        The loss; ``nan`` for ``"mean"`` if every row is ignored, as in torch.
+
+    Raises:
+        ValueError: If ``reduction`` is not one of the three values.
+    """
     if reduction not in ("none", "sum", "mean"):
         raise ValueError(f"reduction={reduction!r}: use none, sum or mean")
     valid = target != ignore_index

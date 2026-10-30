@@ -11,12 +11,19 @@ from jax import lax
 __all__ = ["vocab_parallel_log_prob_of"]
 
 
-def vocab_parallel_log_prob_of(logits_shard: jax.Array, target: jax.Array, axis_name) -> jax.Array:
+def vocab_parallel_log_prob_of(logits_shard: jax.Array, target: jax.Array, axis_name: str) -> jax.Array:
     """``log_prob_of`` for logits split over the last (class) dimension along mesh axis
-    ``axis_name``; call it inside ``jax.shard_map``. ``logits_shard`` is ``[..., C / n]`` and holds
-    classes ``[i * C / n, (i + 1) * C / n)`` on axis index ``i`` (equal shards, in order); ``target``
-    is ``[...]`` with *global* class indices, the same on every shard. Returns the log-probability
-    ``[...]``, identical on every shard."""
+    ``axis_name``. Call it inside ``jax.shard_map``; it communicates with ``psum`` / ``pmax``.
+
+    Args:
+        logits_shard: ``[..., C / n]``, holding classes ``[i * C / n, (i + 1) * C / n)`` on axis
+            index ``i`` (equal shards, in order).
+        target: ``[...]`` *global* class indices, the same on every shard.
+        axis_name: Name of the mesh axis the classes are split along.
+
+    Returns:
+        ``log p(target)`` of shape ``target.shape``, identical on every shard.
+    """
     vp = logits_shard.shape[-1]
     t = (target - lax.axis_index(axis_name) * vp)[..., None]           # local index, out of range elsewhere
     is_t = jnp.arange(vp) == t                                         # all False where the target is on another shard
