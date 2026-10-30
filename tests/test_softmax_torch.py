@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from safe_softmax import cross_entropy, log_prob_of, log_softmax, softmax, vocab_parallel_log_prob_of
+from softmax_torch import cross_entropy, log_prob_of, log_softmax, softmax, vocab_parallel_log_prob_of
 
 DTYPES = [torch.float32, torch.bfloat16, torch.float16]
 # margins past the collapse threshold of each dtype (16.6 / 5.5 / 7.6)

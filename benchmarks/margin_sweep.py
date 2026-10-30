@@ -1,4 +1,4 @@
-"""Sweep the logit margin and compare torch.log_softmax with safe_softmax.log_prob_of.
+"""Sweep the logit margin and compare torch.log_softmax with softmax_torch.log_prob_of.
 
 For each dtype and margin m, a row [m, 0, ..., 0] (C classes, target 0) is evaluated. Prints the
 target's log-probability and gradient next to the float64 reference, and the row's gradient sum.
@@ -13,7 +13,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from safe_softmax import log_prob_of
+from softmax_torch import log_prob_of
 
 C = 8
 MARGINS = [4.0, 8.0, 12.0, 20.0, 30.0, 40.0]
