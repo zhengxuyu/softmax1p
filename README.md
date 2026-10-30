@@ -1,8 +1,10 @@
 # softmax1p
 
-Drop-in PyTorch `log_softmax`, `softmax` and `cross_entropy` that do not suffer from **Softmax Collapse**. This is a single file, [`safe_softmax.py`](safe_softmax.py), that depends only on `torch`.
+This repository is a PyTorch implementation of the improvement proposed in:
 
-It implements the fix from Barron, Gnanapragasam & Tschannen, [*A Fix for Softmax and Cross-Entropy*](https://arxiv.org/abs/2610.31642) (arXiv:2610.31642, 2026).
+> Jonathan T. Barron, Dan Gnanapragasam, Michael Tschannen. **[A Fix for Softmax and Cross-Entropy](https://arxiv.org/abs/2610.31642)**. arXiv:2610.31642, 2026.
+
+It provides drop-in `log_softmax`, `softmax` and `cross_entropy` that do not suffer from **Softmax Collapse**, in a single file ([`safe_softmax.py`](safe_softmax.py)) that depends only on `torch`.
 
 📝 Blog post with a full walkthrough of the paper (in Chinese): **[深度理解 "A Fix for Softmax and Cross-Entropy"](https://zhengxuyu.github.io/blog/softmax-cross-entropy-fix)**
 
@@ -130,20 +132,9 @@ bfloat16: logits [20.0, 0.0, 0.0, 0.0], target 0
 float64 reference log p = -6.1834608353410505e-09
 ```
 
-## Citation
+## Related work
 
-If you use this code, please cite the original paper:
-
-```bibtex
-@article{barron2026fix,
-  title   = {A Fix for Softmax and Cross-Entropy},
-  author  = {Barron, Jonathan T. and Gnanapragasam, Dan and Tschannen, Michael},
-  journal = {arXiv preprint arXiv:2610.31642},
-  year    = {2026}
-}
-```
-
-Related work discussed in the blog post:
+Discussed in the blog post:
 
 - Prieto et al., *Grokking at the Edge of Numerical Stability* (StableMax), ICLR 2025.
 - Thilak et al., *The Slingshot Mechanism: An Empirical Study of Adaptive Optimizers and the Grokking Phenomenon*, arXiv:2206.04817, 2022.
